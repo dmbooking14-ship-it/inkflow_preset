@@ -8,23 +8,26 @@
     <style>
         :root { --gold: #c5a059; --dark: #121212; --grey: #1e1e1e; --text: #e0e0e0; }
         body { background-color: var(--dark); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { max-width: 500px; width: 100%; background: var(--grey); padding: 30px; border-radius: 12px; border: 1px solid #333; }
-        h1 { color: var(--gold); text-align: center; font-size: 24px; letter-spacing: 2px; }
+        .container { max-width: 500px; width: 100%; background: var(--grey); padding: 30px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: var(--gold); text-align: center; font-size: 24px; letter-spacing: 2px; margin-bottom: 5px; }
         p { text-align: center; font-size: 14px; color: #888; margin-bottom: 30px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 20px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
-        .upload-btn { background: #333; color: var(--gold); border: 1px dashed var(--gold); padding: 15px; text-align: center; cursor: pointer; border-radius: 6px; margin-bottom: 20px; }
-        button[type="submit"] { width: 100%; padding: 15px; background: var(--gold); border: none; color: black; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 16px; }
-        #image-preview { font-size: 12px; color: var(--gold); margin-top: -10px; margin-bottom: 10px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 13px; text-transform: uppercase; color: var(--gold); }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 20px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        input:focus, textarea:focus { border-color: var(--gold); outline: none; }
+        .upload-btn { background: #333; color: var(--gold); border: 1px dashed var(--gold); padding: 15px; text-align: center; cursor: pointer; border-radius: 6px; margin-bottom: 10px; transition: 0.3s; }
+        .upload-btn:hover { background: #3d3d3d; }
+        #image-preview { font-size: 12px; color: #00ff88; margin-bottom: 20px; font-weight: bold; text-align: center; }
+        button[type="submit"] { width: 100%; padding: 18px; background: var(--gold); border: none; color: black; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 16px; text-transform: uppercase; margin-top: 10px; }
+        button[type="submit"]:hover { background: #d6b370; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>INKFLOW</h1>
-    <p>Pre-Consultation Intake Form</p>
+    <p>Professional Tattoo Intake Portal</p>
 
-    <form action="https://formspree.io/f/meerrewb" method="POST">
+    <form action="https://formspree.io/f/meerrewb" method="POST" id="intake-form">
         
         <label>Full Name</label>
         <input type="text" name="name" placeholder="John Doe" required>
@@ -36,43 +39,59 @@
         <input type="text" name="placement" placeholder="e.g. Left Forearm" required>
 
         <label>Approximate Size (Inches)</label>
-        <input type="number" name="size" placeholder="e.g. 4" required>
+        <input type="text" name="size" placeholder="e.g. 5x5 inches" required>
 
-        <label>Tattoo Concept & Details</label>
-        <textarea name="details" rows="4" placeholder="Describe your idea..." required></textarea>
+        <label>Tattoo Concept</label>
+        <textarea name="details" rows="4" placeholder="Describe your idea in detail..." required></textarea>
 
         <label>Reference Images</label>
-        <div class="upload-btn" id="upload_widget">Click to Upload Photos</div>
-        <div id="image-preview">No images uploaded yet</div>
+        <div class="upload-btn" id="upload_widget">📸 Click to Upload Photos</div>
+        <div id="image-preview">No images attached yet.</div>
+        
         <input type="hidden" name="image_urls" id="image_urls">
 
         <label>Budget Range</label>
         <select name="budget" required>
-            <option value="Under $200">Under $200 (Artist Minimum is $200)</option>
+            <option value="" disabled selected>Select your budget</option>
             <option value="$200 - $500">$200 - $500</option>
             <option value="$500 - $1000">$500 - $1000</option>
             <option value="$1000+">$1000+</option>
         </select>
 
-        <button type="submit">Submit Request</button>
+        <button type="submit">Submit Consultation Request</button>
     </form>
 </div>
 
 <script>
-    // Cloudinary Setup (You will need to create a free account to get these)
+    // YOUR CONFIGURATION
     const cloudName = "dfkg9iswc"; 
-    const uploadPreset = "inkflow_preset";
+    const uploadPreset = "inkflow_preset"; // MUST BE SET TO 'UNSIGNED' IN CLOUDINARY
 
-    var myWidget = cloudinary.createUploadWidget({
+    const myWidget = cloudinary.createUploadWidget({
         cloudName: cloudName, 
-        uploadPreset: uploadPreset}, (error, result) => { 
-            if (!error && result && result.event === "success") { 
-                console.log('Done! Here is the image info: ', result.info); 
-                document.getElementById('image_urls').value += result.info.secure_url + ", ";
-                document.getElementById('image-preview').innerText = "Image uploaded successfully!";
-            }
+        uploadPreset: uploadPreset,
+        sources: ['local', 'camera', 'url'],
+        multiple: true,
+        maxFiles: 5,
+        clientAllowedFormats: ["png", "jpg", "jpeg"]
+    }, (error, result) => { 
+        if (error) {
+            console.error("Upload Error:", error);
         }
-    );
+        if (!error && result && result.event === "success") { 
+            console.log('Upload Success:', result.info.secure_url); 
+            
+            // Get current hidden input value
+            let hiddenInput = document.getElementById('image_urls');
+            let currentContent = hiddenInput.value;
+            
+            // Append new URL with a separator for the email
+            hiddenInput.value = currentContent + (currentContent ? " | " : "") + result.info.secure_url;
+            
+            // Update UI
+            document.getElementById('image-preview').innerText = "✅ Image(s) attached successfully!";
+        }
+    });
 
     document.getElementById("upload_widget").addEventListener("click", function(){
         myWidget.open();
@@ -81,3 +100,4 @@
 
 </body>
 </html>
+
